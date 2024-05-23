@@ -1,0 +1,66 @@
+# parameters for user interface
+[ui]
+title = "AI Assistant with LangChain 🦜"
+hello_msg = "Ciao, come posso aiutarti?"
+do_streaming = true
+add_references = true
+verbose = false
+
+# enable tracing with langsmith
+[tracing]
+enable = true
+langchain_project = "workshop-1"
+
+[text_splitting]
+chunk_size = 1500
+chunk_overlap = 50
+
+[embeddings]
+embed_model_type = "OCI"
+
+[embeddings.oci]
+embed_batch_size = 90
+embed_model = "cohere.embed-multilingual-v3.0"
+embed_endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
+
+[embeddings.cohere]
+
+# vector store
+# store_type: OPENSEARCH, 23AI
+[vector_store]
+store_type = "OPENSEARCH"
+collection_name = "ORACLE_KNOWLEDGE"
+
+[vector_store.opensearch]
+opensearch_url = "https://localhost:9200"
+use_ssl = true
+verify_certs = false
+ssl_assert_hostname = false
+ssl_show_warn = false
+bulk_size = 5000
+index_name = "test1"
+engine = "faiss"
+
+[vector_store.o23ai]
+embeddings_bit = 32
+
+[reranker]
+add_reranker = true
+cohere_reranker_model = "rerank-multilingual-v3.0"
+
+[retriever]
+top_k = 8
+top_n = 4
+
+# general llm
+[llm]
+temperature = 0.1
+max_tokens = 1024
+model_type = "COHERE"
+
+[llm.oci]
+llm_model = "meta.llama-2-70b-chat"
+endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
+
+[llm.cohere]
+llm_model = "command-r"
