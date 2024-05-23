@@ -1,7 +1,7 @@
 """
 Author: Luigi Saetta
 Date created: 2024-04-27
-Date last modified: 2024-04-27
+Date last modified: 2024-05-23
 Python Version: 3.11
 """
 
@@ -18,12 +18,13 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from tokenizers import Tokenizer
 import requests
 
-from utils import get_console_logger
-from config import CHUNK_OVERLAP, BOOKS_DIR
+from utils import get_console_logger, load_configuration
 
 #
 # Main
 #
+config = load_configuration()
+
 logger = get_console_logger()
 
 parser = argparse.ArgumentParser(description="Analyze chunking.")
@@ -41,12 +42,12 @@ else:
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=max_chunk_size,
-    chunk_overlap=CHUNK_OVERLAP,
+    chunk_overlap=config["text_splitting"]["chunk_overlap"],
     length_function=len,
     is_separator_regex=False,
 )
 
-loader = PyPDFDirectoryLoader(path=BOOKS_DIR, glob="*.pdf")
+loader = PyPDFDirectoryLoader(path=config["text_splitting"]["books_dir"], glob="*.pdf")
 
 logger.info("")
 logger.info("Loading and splitting in chunks...")

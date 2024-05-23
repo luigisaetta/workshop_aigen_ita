@@ -13,24 +13,38 @@ from langchain_community.vectorstores import OpenSearchVectorSearch
 
 from factory import get_embed_model
 from chunk_index_utils import load_books_and_split
-from utils import get_console_logger
+from utils import get_console_logger, load_configuration
 
-from config import BOOKS_DIR, OPENSEARCH_SHARED_PARAMS
 from config_private import OPENSEARCH_USER, OPENSEARCH_PWD
 
 logger = get_console_logger()
 
+config = load_configuration()
+
 # load all the books in BOOKS_DIR
-docs = load_books_and_split(BOOKS_DIR)
+books_dir = config["text_splitting"]["books_dir"]
+
+docs = load_books_and_split(books_dir)
 
 embed_model = get_embed_model(model_type="OCI")
+
+OPENSEARCH_PARAMS = {
+    "opensearch_url": config["vector_store"]["opensearch"]["opensearch_url"],
+    "use_ssl": config["vector_store"]["opensearch"]["use_ssl"],
+    "verify_certs": config["vector_store"]["opensearch"]["verify_certs"],
+    "ssl_assert_hostname": config["vector_store"]["opensearch"]["ssl_assert_hostname"],
+    "ssl_show_warn": config["vector_store"]["opensearch"]["ssl_show_warn"],
+    "bulk_size": int(config["vector_store"]["opensearch"]["bulk_size"]),
+    "index_name": config["vector_store"]["opensearch"]["index_name"],
+    "engine": config["vector_store"]["opensearch"]["engine"],
+}
 
 # load text and embeddings in OpenSearch
 docsearch = OpenSearchVectorSearch.from_documents(
     docs,
     embedding=embed_model,
     http_auth=(OPENSEARCH_USER, OPENSEARCH_PWD),
-    **OPENSEARCH_SHARED_PARAMS
+    **OPENSEARCH_PARAMS
 )
 
 # Do a test

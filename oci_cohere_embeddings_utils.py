@@ -1,14 +1,13 @@
 """
 Author: Luigi Saetta
 Date created: 2024-04-27
-Date last modified: 2024-04-27
+Date last modified: 2024-05-23
 Python Version: 3.11
 """
 
 from tqdm.auto import tqdm
 from langchain_community.embeddings import OCIGenAIEmbeddings
-
-from config import EMBED_BATCH_SIZE
+from utils import load_configuration
 
 
 #
@@ -20,8 +19,10 @@ class OCIGenAIEmbeddingsWithBatch(OCIGenAIEmbeddings):
     with Cohere max # of texts is: 96
     """
 
+    config = load_configuration()
+
     def embed_documents(self, texts):
-        batch_size = EMBED_BATCH_SIZE
+        batch_size = self.config["embeddings"]["oci"]["embed_batch_size"]
         embeddings = []
 
         if len(texts) > batch_size:

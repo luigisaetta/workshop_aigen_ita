@@ -1,7 +1,7 @@
 """
 Author: Luigi Saetta
 Date created: 2024-04-27
-Date last modified: 2024-04-30
+Date last modified: 2024-05-23
 Python Version: 3.11
 
 Usage: contains the functions to split in chunks and create the index
@@ -38,7 +38,7 @@ def get_recursive_text_splitter():
     """
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=config["text_splitting"]["chunk_size"],
-        chunk_overlap=["text_splitting"]["chunk_overlap"],
+        chunk_overlap=config["text_splitting"]["chunk_overlap"],
         length_function=len,
         is_separator_regex=False,
     )
