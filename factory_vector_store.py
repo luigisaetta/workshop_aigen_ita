@@ -17,13 +17,9 @@ from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
 
-from utils import check_value_in_list
+from utils import check_value_in_list, load_configuration
 
-from config import (
-    COLLECTION_NAME,
-    # shared params for opensearch
-    OPENSEARCH_SHARED_PARAMS,
-)
+
 from config_private import (
     OPENSEARCH_USER,
     OPENSEARCH_PWD,
@@ -32,6 +28,8 @@ from config_private import (
     DB_HOST_IP,
     DB_SERVICE,
 )
+
+config = load_configuration()
 
 
 def get_vector_store(vector_store_type, embed_model):
@@ -46,13 +44,26 @@ def get_vector_store(vector_store_type, embed_model):
 
     v_store = None
 
+    OPENSEARCH_PARAMS = {
+        "opensearch_url": config["vector_store"]["opensearch"]["opensearch_url"],
+        "use_ssl": config["vector_store"]["opensearch"]["use_ssl"],
+        "verify_certs": config["vector_store"]["opensearch"]["verify_certs"],
+        "ssl_assert_hostname": config["vector_store"]["opensearch"][
+            "ssl_assert_hostname"
+        ],
+        "ssl_show_warn": config["vector_store"]["opensearch"]["ssl_show_warn"],
+        "bulk_size": int(config["vector_store"]["opensearch"]["bulk_size"]),
+        "index_name": config["vector_store"]["opensearch"]["index_name"],
+        "engine": config["vector_store"]["opensearch"]["engine"],
+    }
+
     if vector_store_type == "OPENSEARCH":
         # this assumes that there is an OpenSearch cluster available
         # or docker, at the specified URL
         v_store = OpenSearchVectorSearch(
             embedding_function=embed_model,
             http_auth=(OPENSEARCH_USER, OPENSEARCH_PWD),
-            **OPENSEARCH_SHARED_PARAMS,
+            **OPENSEARCH_PARAMS,
         )
 
     elif vector_store_type == "23AI":
@@ -63,7 +74,7 @@ def get_vector_store(vector_store_type, embed_model):
 
             v_store = OracleVS(
                 client=connection,
-                table_name=COLLECTION_NAME,
+                table_name=config["vector_store"]["collection_name"],
                 distance_strategy=DistanceStrategy.COSINE,
                 embedding_function=embed_model,
             )

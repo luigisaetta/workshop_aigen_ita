@@ -30,7 +30,6 @@ CHUNK_OVERLAP = 50
 EMBED_MODEL_TYPE = "OCI"
 EMBED_BATCH_SIZE = 90
 OCI_EMBED_MODEL = "cohere.embed-multilingual-v3.0"
-COHERE_EMBED_MODEL = "embed-multilingual-v3.0"
 
 # current endpoint for OCI GenAI (embed and llm) models
 ENDPOINT = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"

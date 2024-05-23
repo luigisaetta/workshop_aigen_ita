@@ -17,14 +17,8 @@ from langchain_community.vectorstores.oraclevs import OracleVS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from utils import get_console_logger, remove_path_from_ref
-from config import (
-    CHUNK_SIZE,
-    CHUNK_OVERLAP,
-    OPENSEARCH_URL,
-    OPENSEARCH_INDEX_NAME,
-    COLLECTION_NAME,
-)
+from utils import get_console_logger, remove_path_from_ref, load_configuration
+
 from config_private import (
     OPENSEARCH_USER,
     OPENSEARCH_PWD,
@@ -34,14 +28,17 @@ from config_private import (
     DB_SERVICE,
 )
 
+# config is a global object
+config = load_configuration()
+
 
 def get_recursive_text_splitter():
     """
     return a recursive text splitter
     """
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
+        chunk_size=config["text_splitting"]["chunk_size"],
+        chunk_overlap=["text_splitting"]["chunk_overlap"],
         length_function=len,
         is_separator_regex=False,
     )
@@ -82,7 +79,7 @@ def add_docs_to_23ai(docs, embed_model):
 
         v_store = OracleVS(
             client=connection,
-            table_name=COLLECTION_NAME,
+            table_name=config["vector_store"]["collection_name"],
             distance_strategy=DistanceStrategy.COSINE,
             embedding_function=embed_model,
         )
@@ -106,14 +103,14 @@ def add_docs_to_opensearch(docs, embed_model):
 
     v_store = OpenSearchVectorSearch(
         embedding_function=embed_model,
-        opensearch_url=OPENSEARCH_URL,
+        opensearch_url=config["vector_store"]["opensearch"]["opensearch_url"],
         http_auth=(OPENSEARCH_USER, OPENSEARCH_PWD),
         use_ssl=True,
         verify_certs=False,
         ssl_assert_hostname=False,
         ssl_show_warn=False,
         bulk_size=5000,
-        index_name=OPENSEARCH_INDEX_NAME,
+        index_name=config["vector_store"]["opensearch"]["index_name"],
         engine="faiss",
     )
 

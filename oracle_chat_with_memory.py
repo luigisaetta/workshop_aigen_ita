@@ -33,21 +33,16 @@ from chunk_index_utils import (
     add_docs_to_opensearch,
     add_docs_to_23ai,
 )
-from utils import get_console_logger, enable_tracing, remove_path_from_ref
-
-#
-# Configs
-#
-from config import (
-    VERBOSE,
-    HELLO_MSG,
-    ENABLE_TRACING,
-    TITLE,
-    ADD_REFERENCES,
-    DO_STREAMING,
-    VECTOR_STORE_TYPE,
-    EMBED_MODEL_TYPE,
+from utils import (
+    get_console_logger,
+    enable_tracing,
+    remove_path_from_ref,
+    load_configuration,
 )
+
+
+# global config
+config = load_configuration()
 
 # Constant
 USER = "user"
@@ -68,7 +63,7 @@ def reset_conversation():
 # defined here to avoid import of streamlit in other module
 # cause we need here to use @cache
 @st.cache_resource
-def create_chat_engine(verbose=VERBOSE):
+def create_chat_engine(verbose=config["ui"]["verbose"]):
     """
     Create the entire RAG chain
     """
@@ -93,7 +88,7 @@ def nostream_output(v_ai_msg):
     """
     formatted_output = v_ai_msg["answer"]
 
-    if ADD_REFERENCES and v_ai_msg["context"]:
+    if config["ui"]["add_references"] and v_ai_msg["context"]:
         formatted_output += format_references(v_ai_msg["context"])
 
     st.markdown(formatted_output)
@@ -114,13 +109,13 @@ def stream_output(v_ai_msg):
             formatted_output += chunk["answer"]
             text_placeholder.markdown(formatted_output, unsafe_allow_html=True)
 
-        if ADD_REFERENCES:
+        if config["ui"]["add_references"]:
             if "context" in chunk:
                 refs = format_references(chunk["context"])
 
     # references must be added at the end
     # in Langchain they're passed before the answer in the stream
-    if ADD_REFERENCES:
+    if config["ui"]["add_references"]:
         formatted_output += refs
 
     text_placeholder.markdown(formatted_output, unsafe_allow_html=True)
@@ -169,11 +164,11 @@ def load_uploaded_file_in_vector_store(v_uploaded_file):
         # prepare for loading
         docs = load_book_and_split(temp_file_path)
 
-    embed_model = get_embed_model(EMBED_MODEL_TYPE)
+    embed_model = get_embed_model(config["embedddings"]["embed_model_type"])
 
-    if VECTOR_STORE_TYPE == "OPENSEARCH":
+    if config["vector_store"]["store_type"] == "OPENSEARCH":
         add_docs_to_opensearch(docs, embed_model)
-    elif VECTOR_STORE_TYPE == "23AI":
+    elif config["vector_store"]["store_type"] == "23AI":
         add_docs_to_23ai(docs, embed_model)
 
 
@@ -187,12 +182,12 @@ def load_uploaded_file_in_vector_store(v_uploaded_file):
 
 logger = get_console_logger()
 
-if ENABLE_TRACING:
+if config["tracing"]["enable"]:
     # enable tracing with LangSmith
     enable_tracing()
 
 # the title (from config)
-st.title(TITLE)
+st.title(config["ui"]["title"])
 
 # Added reset button
 if st.sidebar.button("Clear Chat History"):
@@ -212,7 +207,7 @@ if uploaded_file:
     logger.info("Loaded !")
 
     # reload the rag_chain (do we need?)
-    rag_chain = build_rag_chain(verbose=False)
+    rag_chain = build_rag_chain(verbose=config["ui"]["verbose"])
 
     uploaded_file = None
 
@@ -223,7 +218,7 @@ if "chat_history" not in st.session_state:
 # init RAG
 with st.spinner("Initializing RAG chain..."):
     # here we create the query engine
-    rag_chain = create_chat_engine(verbose=VERBOSE)
+    rag_chain = create_chat_engine(verbose=config["ui"]["verbose"])
 
 # Display chat messages from history on app rerun
 display_msg_on_rerun(st.session_state.chat_history)
@@ -231,7 +226,7 @@ display_msg_on_rerun(st.session_state.chat_history)
 #
 # Here the code where react to user input
 #
-if question := st.chat_input(HELLO_MSG):
+if question := st.chat_input(config["ui"]["hello_msg"]):
     # Display user message in chat message container
     st.chat_message(USER).markdown(question)
 
@@ -257,14 +252,14 @@ if question := st.chat_input(HELLO_MSG):
                 "chat_history": st.session_state.chat_history,
             }
 
-            if DO_STREAMING:
+            if config["ui"]["do_streaming"]:
                 ai_msg = rag_chain.stream(input_msg)
             else:
                 ai_msg = rag_chain.invoke(input_msg)
 
         # Display the response in chat message container
         with st.chat_message(ASSISTANT):
-            if DO_STREAMING:
+            if config["ui"]["do_streaming"]:
                 output = stream_output(ai_msg)
             else:
                 output = nostream_output(ai_msg)

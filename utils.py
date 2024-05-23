@@ -7,23 +7,12 @@ Python Version: 3.11
 
 import logging
 import os
+import toml
 
-from config import (
-    TOP_K,
-    TOP_N,
-    EMBED_MODEL_TYPE,
-    OCI_EMBED_MODEL,
-    COHERE_EMBED_MODEL,
-    ENABLE_TRACING,
-    LANGCHAIN_PROJECT,
-    ADD_RERANKER,
-    COHERE_RERANKER_MODEL,
-    VECTOR_STORE_TYPE,
-    LLM_MODEL_TYPE,
-    COHERE_GENAI_MODEL,
-    OCI_GENAI_MODEL,
-)
 from config_private import LANGSMITH_API_KEY
+
+# config is a global object
+config = toml.load("config.toml")
 
 
 def remove_path_from_ref(ref_pathname):
@@ -40,18 +29,11 @@ def remove_path_from_ref(ref_pathname):
 
 def load_configuration():
     """
-    read the configuration from config and return a configs dictionary
+    read the configuration from config.toml
     """
-    configs = {}
-    configs["VECTOR_STORE_TYPE"] = VECTOR_STORE_TYPE
-    configs["EMBED_MODEL_TYPE"] = EMBED_MODEL_TYPE
-    configs["OCI_EMBED_MODEL"] = OCI_EMBED_MODEL
-    configs["COHERE_EMBED_MODEL"] = COHERE_EMBED_MODEL
-    configs["LLM_MODEL_TYPE"] = LLM_MODEL_TYPE
-    configs["TOP_K"] = TOP_K
-    configs["TOP_N"] = TOP_N
+    config = toml.load("config.toml")
 
-    return configs
+    return config
 
 
 def enable_tracing():
@@ -59,7 +41,7 @@ def enable_tracing():
     To enable tracing with LangSmith
     """
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    os.environ["LANGCHAIN_PROJECT"] = LANGCHAIN_PROJECT
+    os.environ["LANGCHAIN_PROJECT"] = config["tracing"]["langchain_project"]
     os.environ["LANGCHAIN_API_KEY"] = LANGSMITH_API_KEY
 
 
@@ -102,29 +84,35 @@ def print_configuration():
     logger.info("Configuration used:")
     logger.info("")
 
+    EMBED_MODEL_TYPE = config["embeddings"]["embed_model_type"]
     logger.info(" Embedding model type: %s", EMBED_MODEL_TYPE)
 
     if EMBED_MODEL_TYPE == "OCI":
-        logger.info(" Using %s for Embeddings...", OCI_EMBED_MODEL)
-    if EMBED_MODEL_TYPE == "COHERE":
-        logger.info(" Using %s for Embeddings...", COHERE_EMBED_MODEL)
+        logger.info(
+            " Using %s for Embeddings...", config["embeddings"]["oci"]["embed_model"]
+        )
 
-    if ADD_RERANKER:
+    if config["reranker"]["add_reranker"]:
         logger.info(" Added Cohere Reranker...")
-        logger.info(" Using %s as reranker...", COHERE_RERANKER_MODEL)
+        logger.info(
+            " Using %s as reranker...", config["reranker"]["cohere_reranker_model"]
+        )
 
-    logger.info(" Using %s as Vector Store...", VECTOR_STORE_TYPE)
+    logger.info(" Using %s as Vector Store...", config["vector_store"]["store_type"])
     logger.info(" Retrieval parameters:")
-    logger.info("    TOP_K: %s", TOP_K)
-    logger.info("    TOP_N: %s", TOP_N)
+    logger.info("    TOP_K: %s", config["retriever"]["top_k"])
 
+    if config["reranker"]["add_reranker"]:
+        logger.info("    TOP_N: %s", config["retriever"]["top_n"])
+
+    LLM_MODEL_TYPE = config["llm"]["model_type"]
     logger.info(" Using %s as Generative Model type...", LLM_MODEL_TYPE)
     if LLM_MODEL_TYPE == "COHERE":
-        logger.info(" Using %s for LLM...", COHERE_GENAI_MODEL)
+        logger.info(" Using %s for LLM...", config["llm"]["cohere"]["llm_model"])
     if LLM_MODEL_TYPE == "OCI":
-        logger.info(" Using %s for LLM...", OCI_GENAI_MODEL)
+        logger.info(" Using %s for LLM...", config["llm"]["oci"]["llm_model"])
 
-    if ENABLE_TRACING:
+    if config["tracing"]["enable"] == "true":
         logger.info("")
         logger.info(" Enabled Observability with LangSmith...")
 

@@ -8,7 +8,7 @@ Python Version: 3.11
 import logging
 
 # Cohere
-from langchain_cohere import ChatCohere, CohereRerank, CohereEmbeddings
+from langchain_cohere import ChatCohere, CohereRerank
 from langchain.retrievers import ContextualCompressionRetriever
 
 # to handle conversational memory
@@ -25,30 +25,15 @@ from oci_cohere_embeddings_utils import OCIGenAIEmbeddingsWithBatch
 # prompts
 from oracle_chat_prompts import CONTEXT_Q_PROMPT, QA_PROMPT
 
-from utils import print_configuration, check_value_in_list
-
-from config import (
-    EMBED_MODEL_TYPE,
-    OCI_EMBED_MODEL,
-    COHERE_EMBED_MODEL,
-    ENDPOINT,
-    VECTOR_STORE_TYPE,
-    COHERE_GENAI_MODEL,
-    OCI_GENAI_MODEL,
-    TEMPERATURE,
-    MAX_TOKENS,
-    TOP_K,
-    TOP_N,
-    ADD_RERANKER,
-    COHERE_RERANKER_MODEL,
-    LLM_MODEL_TYPE,
-)
+from utils import print_configuration, check_value_in_list, load_configuration
 
 from config_private import (
     COMPARTMENT_ID,
     COHERE_API_KEY,
 )
 
+# configuratin is global
+config = load_configuration()
 
 #
 # functions
@@ -64,13 +49,9 @@ def get_embed_model(model_type="OCI"):
     if model_type == "OCI":
         embed_model = OCIGenAIEmbeddingsWithBatch(
             auth_type="API_KEY",
-            model_id=OCI_EMBED_MODEL,
-            service_endpoint=ENDPOINT,
+            model_id=config["embeddings"]["oci"]["embed_model"],
+            service_endpoint=config["embeddings"]["oci"]["embed_endpoint"],
             compartment_id=COMPARTMENT_ID,
-        )
-    if model_type == "COHERE":
-        embed_model = CohereEmbeddings(
-            model=COHERE_EMBED_MODEL, cohere_api_key=COHERE_API_KEY
         )
     return embed_model
 
@@ -84,17 +65,20 @@ def get_llm(model_type):
     if model_type == "OCI":
         llm = OCIGenAI(
             auth_type="API_KEY",
-            model_id=OCI_GENAI_MODEL,
-            service_endpoint=ENDPOINT,
+            model_id=config["llm"]["oci"]["llm_model"],
+            service_endpoint=config["llm"]["oci"]["endpoint"],
             compartment_id=COMPARTMENT_ID,
-            model_kwargs={"max_tokens": MAX_TOKENS, "temperature": TEMPERATURE},
+            model_kwargs={
+                "max_tokens": config["llm"]["max_tokens"],
+                "temperature": config["llm"]["temperature"],
+            },
         )
     if model_type == "COHERE":
         llm = ChatCohere(
             cohere_api_key=COHERE_API_KEY,
-            model=COHERE_GENAI_MODEL,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
+            model=config["llm"]["cohere"]["llm_model"],
+            max_tokens=config["llm"]["max_tokens"],
+            temperature=config["llm"]["temperature"],
         )
     return llm
 
@@ -111,22 +95,24 @@ def build_rag_chain(verbose):
     # print all the used configuration to the console
     print_configuration()
 
-    embed_model = get_embed_model(EMBED_MODEL_TYPE)
+    embed_model = get_embed_model(config["embeddings"]["embed_model_type"])
 
     v_store = get_vector_store(
-        vector_store_type=VECTOR_STORE_TYPE, embed_model=embed_model
+        vector_store_type=config["vector_store"]["store_type"], embed_model=embed_model
     )
 
     # 10/05: I can add a filter here (for ex: to filter by profile_id)
-    base_retriever = v_store.as_retriever(k=TOP_K)
+    base_retriever = v_store.as_retriever(k=config["retriever"]["top_k"])
 
     # add the reranker
-    if ADD_RERANKER:
+    if config["reranker"]["add_reranker"]:
         if verbose:
             logger.info("Adding a reranker...")
 
         cohere_rerank = CohereRerank(
-            cohere_api_key=COHERE_API_KEY, top_n=TOP_N, model=COHERE_RERANKER_MODEL
+            cohere_api_key=COHERE_API_KEY,
+            top_n=config["retriever"]["top_n"],
+            model=config["reranker"]["cohere_reranker_model"],
         )
 
         retriever = ContextualCompressionRetriever(
@@ -136,7 +122,7 @@ def build_rag_chain(verbose):
         # no reranker
         retriever = base_retriever
 
-    llm = get_llm(model_type=LLM_MODEL_TYPE)
+    llm = get_llm(model_type=config["llm"]["model_type"])
 
     # steps to add chat_history
     # 1. create a retriever using chat history
