@@ -35,7 +35,7 @@ logger.info("Loaded %s chunks...", len(docs))
 
 embed_model = get_embed_model(model_type="OCI")
 
-docsearch = get_vector_store("OPENSEARCH", embed_model, None, None)
+docsearch = get_vector_store("OPENSEARCH", embed_model)
 
 # test
 QUERY = "La metformina può essere usata per curare il diabete di tipo 2 nei pazienti anziani?"
