@@ -34,8 +34,9 @@ config = load_configuration()
 
 def get_vector_store(vector_store_type, embed_model):
     """
-    local_index_dir, books_dir only needed for FAISS
-    Faiss: Read or rebuild the index and retur a Vector Store
+    vector_store_type: can be OPENSEARCH or 23AI
+    embed_model an object wrapping the model used for embedings
+    return a Vector Store Object
     """
 
     check_value_in_list(vector_store_type, ["OPENSEARCH", "23AI"])
