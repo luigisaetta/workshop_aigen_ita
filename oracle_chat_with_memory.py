@@ -184,7 +184,7 @@ logger = get_console_logger()
 
 if config["tracing"]["enable"]:
     # enable tracing with LangSmith
-    enable_tracing()
+    enable_tracing(config)
 
 # the title (from config)
 st.title(config["ui"]["title"])

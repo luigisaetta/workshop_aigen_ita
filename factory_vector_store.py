@@ -45,22 +45,23 @@ def get_vector_store(vector_store_type, embed_model):
 
     v_store = None
 
-    OPENSEARCH_PARAMS = {
-        "opensearch_url": config["vector_store"]["opensearch"]["opensearch_url"],
-        "use_ssl": config["vector_store"]["opensearch"]["use_ssl"],
-        "verify_certs": config["vector_store"]["opensearch"]["verify_certs"],
-        "ssl_assert_hostname": config["vector_store"]["opensearch"][
-            "ssl_assert_hostname"
-        ],
-        "ssl_show_warn": config["vector_store"]["opensearch"]["ssl_show_warn"],
-        "bulk_size": int(config["vector_store"]["opensearch"]["bulk_size"]),
-        "index_name": config["vector_store"]["opensearch"]["index_name"],
-        "engine": config["vector_store"]["opensearch"]["engine"],
-    }
-
     if vector_store_type == "OPENSEARCH":
         # this assumes that there is an OpenSearch cluster available
         # or docker, at the specified URL
+
+        OPENSEARCH_PARAMS = {
+            "opensearch_url": config["vector_store"]["opensearch"]["opensearch_url"],
+            "use_ssl": config["vector_store"]["opensearch"]["use_ssl"],
+            "verify_certs": config["vector_store"]["opensearch"]["verify_certs"],
+            "ssl_assert_hostname": config["vector_store"]["opensearch"][
+                "ssl_assert_hostname"
+            ],
+            "ssl_show_warn": config["vector_store"]["opensearch"]["ssl_show_warn"],
+            "bulk_size": int(config["vector_store"]["opensearch"]["bulk_size"]),
+            "index_name": config["vector_store"]["opensearch"]["index_name"],
+            "engine": config["vector_store"]["opensearch"]["engine"],
+        }
+
         v_store = OpenSearchVectorSearch(
             embedding_function=embed_model,
             http_auth=(OPENSEARCH_USER, OPENSEARCH_PWD),

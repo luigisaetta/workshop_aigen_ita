@@ -56,7 +56,7 @@ def get_embed_model(model_type="OCI"):
     return embed_model
 
 
-def get_llm(model_type):
+def get_llm(model_type="OCI"):
     """
     Build and return the LLM client
     """
@@ -93,7 +93,7 @@ def build_rag_chain(verbose):
     logger = logging.getLogger("ConsoleLogger")
 
     # print all the used configuration to the console
-    print_configuration()
+    print_configuration(config)
 
     embed_model = get_embed_model(config["embeddings"]["embed_model_type"])
 

@@ -11,9 +11,6 @@ import toml
 
 from config_private import LANGSMITH_API_KEY
 
-# config is a global object
-config = toml.load("config.toml")
-
 
 def remove_path_from_ref(ref_pathname):
     """
@@ -36,7 +33,7 @@ def load_configuration():
     return config
 
 
-def enable_tracing():
+def enable_tracing(config):
     """
     To enable tracing with LangSmith
     """
@@ -74,7 +71,7 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-def print_configuration():
+def print_configuration(config):
     """
     print the current config
     """
