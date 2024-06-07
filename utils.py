@@ -74,6 +74,7 @@ def format_docs(docs):
 def print_configuration(config):
     """
     print the current config
+    config: object containing the config read from toml file
     """
     logger = logging.getLogger("ConsoleLogger")
 
@@ -137,3 +138,17 @@ def answer(chain, question):
     print("")
     print(response["answer"])
     print("")
+
+
+def read_preamble(
+    preamble_id: str,
+    file_name="preamble_library.toml",
+):
+    """
+    read a preamble
+    preamble_id: the name of the preamble in the file
+    """
+    with open(file_name, "r") as file:
+        preambles = toml.load(file)
+
+    return preambles["cohere_preambles"][preamble_id]
