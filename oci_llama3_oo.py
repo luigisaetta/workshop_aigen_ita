@@ -1,14 +1,11 @@
-"""
-Cohere command-r client OO
-now compatible with LangChain
+""""
+Experimental client for Llama3 in OCI
 
-This is an OO version based on OCI Python SDK
 last update: 07/06/2024
 """
 
 from typing import Any, Dict, List, Optional
 import logging
-
 import json
 
 from langchain_core.callbacks import (
@@ -19,13 +16,14 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 import oci
-from oci.generative_ai_inference.models import CohereChatRequest, ChatDetails
+from oci.generative_ai_inference.models import GenericChatRequest, ChatDetails
+from oci.generative_ai_inference.models import BaseChatRequest, TextContent, Message
 from oci.generative_ai_inference.models import OnDemandServingMode
 from oci.generative_ai_inference import GenerativeAiInferenceClient
 from oci.retry import NoneRetryStrategy
 
 
-logger = logging.getLogger("oci_command_r")
+logger = logging.getLogger("oci_llama3")
 
 # additional
 OCI_CONFIG_DIR = "~/.oci/config"
@@ -74,13 +72,13 @@ def get_generative_ai_dp_client(endpoint, profile, use_session_token):
     return client
 
 
-class OCICommandR(BaseChatModel):
+class OCILlama3(BaseChatModel):
     """
-    This class wraps the code to use command r in OCI
+    This class wraps the code to use llama3 r in OCI
 
     Usage:
-        chat = OCICommandR(
-            model="cohere.command-r-16k",
+        chat = OCILlama3(
+            model="meta.llama3-3-70b-instruct",
             service_endpoint="endpoint",
             compartment_id="ocid",
             max_tokens=512
@@ -106,7 +104,6 @@ class OCICommandR(BaseChatModel):
     compartment_id: str = None
     auth_type: Optional[str] = "API_KEY"
     auth_profile: Optional[str] = "DEFAULT"
-    preamble_override: Optional[str] = None
     is_streaming: Optional[bool] = False
 
     def __init__(
@@ -120,7 +117,6 @@ class OCICommandR(BaseChatModel):
         max_tokens: Optional[int] = 512,
         auth_type: Optional[str] = "API_KEY",
         auth_profile: Optional[str] = "DEFAULT",
-        preamble_override: Optional[str] = None,
         is_streaming: Optional[bool] = False,
     ):
         """
@@ -140,10 +136,8 @@ class OCICommandR(BaseChatModel):
             compartment_id=compartment_id,
             auth_type=auth_type,
             auth_profile=auth_profile,
-            preamble_override=preamble_override,
             is_streaming=is_streaming,
         )
-
         # init the client to OCI
         self.client = get_generative_ai_dp_client(
             self.service_endpoint,
@@ -152,46 +146,29 @@ class OCICommandR(BaseChatModel):
         )
 
     def invoke(self, query: str, chat_history: List, documents: List):
-        """
-        query: user request
-        chat_history: list of previous messages
-        documents: list of documents to use as Context
-        """
-
         chat_detail = ChatDetails()
 
-        chat_request = CohereChatRequest()
+        content = TextContent()
+        # here we set the user request
+        content.text = f"{query}"
+        message = Message()
+        message.role = "USER"
+        message.content = [content]
 
+        chat_request = GenericChatRequest()
+        chat_request.api_format = BaseChatRequest.API_FORMAT_GENERIC
+
+        #  here we should also send the chat history
+        chat_request.messages = [message]
         # parameters
-
-        # override the preamble
-        chat_request.preamble_override = self.preamble_override
-
-        # control the max length of the answer from LLM
         chat_request.max_tokens = self.max_tokens
-
-        chat_request.is_stream = self.is_streaming
-
-        # to control creativity
         chat_request.temperature = self.temperature
         chat_request.top_p = self.top_p
         chat_request.top_k = self.top_k
-        # chat_request.frequency_penalty = 1.0
 
-        # here we set the user's request
-        chat_request.message = query
-
-        chat_request.chat_history = chat_history
-        # documents to use for answering
-        chat_request.documents = documents
-
-        chat_detail.serving_mode = OnDemandServingMode(
-            # here we set the model
-            model_id=self.model
-        )
-        chat_detail.compartment_id = self.compartment_id
-
+        chat_detail.serving_mode = OnDemandServingMode(model_id=self.model)
         chat_detail.chat_request = chat_request
+        chat_detail.compartment_id = self.compartment_id
 
         #
         # here we call the LLM
@@ -219,7 +196,7 @@ class OCICommandR(BaseChatModel):
             print("\n")
         else:
             # no streaming
-            print(chat_response.data.chat_response.text)
+            print(chat_response.data.chat_response.choices[0].message.content[0].text)
             print("")
 
     # for LangChain compatibility
