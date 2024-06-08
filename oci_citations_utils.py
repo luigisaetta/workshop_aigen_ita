@@ -15,12 +15,16 @@ def extract_document_list(response: Response):
     This function extract form the Cohere response
     in the section for citations the list of documents
     """
-    extracted_doc = []
+    extracted_docs = []
     for doc in response.data.chat_response.documents:
-        extracted_doc.append(
+        extracted_docs.append(
             {"id": doc["id"], "source": doc["source"], "page": doc["page"]}
         )
-    return extracted_doc
+
+    # sort in order of increasing id
+    sorted_docs = sorted(extracted_docs, key=lambda x: x["id"])
+
+    return sorted_docs
 
 
 def extract_citations_from_response(response: Response):

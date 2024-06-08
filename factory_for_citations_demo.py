@@ -3,7 +3,7 @@ Factory methods for demo citations
 """
 
 import logging
-
+from time import time
 import oracledb
 
 from langchain_community.vectorstores.oraclevs import OracleVS
@@ -32,16 +32,19 @@ OCI_EMBED_MODEL = config["embeddings"]["oci"]["embed_model"]
 EMBED_ENDPOINT = config["embeddings"]["oci"]["embed_endpoint"]
 
 LLM_ENDPOINT = config["llm"]["oci"]["endpoint"]
+LLM_MODEL = config["llm"]["oci"]["llm_model"]
 
 DSN = f"{DB_HOST_IP}:1521/{DB_SERVICE}"
 
 # number of docs retrieved for each query
 # reduced from config to simplify output here
-TOP_K = 4
+TOP_K = 6
 
 
 def get_embed_model():
-    """ """
+    """
+    get the embeding model from OCi GenAI
+    """
     embed_model = OCIGenAIEmbeddings(
         auth_type="API_KEY",
         model_id=OCI_EMBED_MODEL,
@@ -52,7 +55,7 @@ def get_embed_model():
 
 
 def get_oracle_vs(embed_model):
-    """ 
+    """
     create a connection and return oraclevs
     """
     try:
@@ -77,7 +80,7 @@ def get_oracle_vs(embed_model):
 
 
 def get_retriever(v_store):
-    """ 
+    """
     get the LangChain retriever
     """
     retriever = v_store.as_retriever(search_kwargs={"k": TOP_K})
@@ -86,14 +89,17 @@ def get_retriever(v_store):
 
 
 def get_chat_model():
-    """ 
+    """
     build the chat Cohere client
     """
     command_r_params = {
-        "model": "cohere.command-r-16k",
+        "model": LLM_MODEL,
         "service_endpoint": LLM_ENDPOINT,
         "compartment_id": COMPARTMENT_ID,
+        "temperature": 0.1,
         "max_tokens": 1024,
+        # this one  seems good for italian
+        "preamble_override": "preamble02",
     }
     # this is a custom class that wraps OCI Python SDK
     chat = OCICommandR(**command_r_params)
@@ -102,7 +108,7 @@ def get_chat_model():
 
 
 def do_query_and_answer(query):
-    """ 
+    """
     build the chain, process the query and return chat answer
     """
     embed_model = get_embed_model()
@@ -111,8 +117,14 @@ def do_query_and_answer(query):
 
     retriever = get_retriever(v_store)
 
-    logger.info("Doing semantich search...")
+    logger.info("Doing semantic search...")
+
+    time_start = time()
+
     result_docs = retriever.invoke(query)
+
+    time_elapsed = round(time() - time_start, 1)
+    logger.info("Time for semantic search: %s sec ...", time_elapsed)
 
     # Cohere wants a map
     # take the output from the AI Vector Search
@@ -127,12 +139,16 @@ def do_query_and_answer(query):
         for i, doc in enumerate(result_docs)
     ]
 
-    chat_history = []
-
     chat = get_chat_model()
 
     logger.info("Invoking chat model...")
 
+    time_start = time()
+
+    # for now I'm not using the chat history
     response = chat.invoke(query=query, chat_history=[], documents=documents_txt)
+
+    time_elapsed = round(time() - time_start, 1)
+    logger.info("Time for chat invoke: %s sec ...", time_elapsed)
 
     return response

@@ -7,34 +7,33 @@ import streamlit as st
 
 from factory_for_citations_demo import do_query_and_answer
 from utils import get_console_logger
+from oci_citations_utils import extract_complete_citations, extract_document_list
 
 
-def inserisci_link_multipli_con_tooltip(stringa, intervalli, urls, tooltips):
-    # Offset totale dovuto agli inserimenti
-    offset = 0
+def highlight_substrings(text, delimiters, doc_ids_list):
+    """
+    Evidenzia le sottostringhe in un testo e aggiunge le liste di doc_id tra parentesi quadre.
 
-    for (start, stop), url, tooltip in zip(intervalli, urls, tooltips):
-        # Calcola le nuove posizioni tenendo conto dell'offset
-        start += offset
-        stop += offset
+    Args:
+    - text (str): il testo originale.
+    - delimiters (list of tuples): ogni tupla contiene (start, end).
+    - doc_ids_list (list of lists): lista delle liste di doc_id associati ai delimitatori.
 
-        # Creare il link HTML con il tooltip
-        link_start = f'<a href="{url}" target="_blank" title="{tooltip}">'
-        link_end = "</a>"
+    Returns:
+    - str: il testo con le sottostringhe evidenziate e le liste di doc_id aggiunte.
+    """
+    combined = list(zip(delimiters, doc_ids_list))
+    combined.sort(key=lambda x: x[0][0], reverse=True)
 
-        # Inserisci il tag di apertura del link subito dopo la posizione di start
-        stringa = stringa[:start] + link_start + stringa[start:]
-        # Aggiorna l'offset dopo l'inserimento del tag di apertura
-        offset += len(link_start)
+    for (start, end), doc_ids in combined:
+        original_substring = text[start:end]
+        highlighted_substring = (
+            f'<span style="background-color: green;">{original_substring}</span>'
+        )
+        doc_id_str = f' [{", ".join(doc_ids)}]'
+        text = text[:start] + highlighted_substring + doc_id_str + text[end:]
 
-        # Calcola la nuova posizione di stop considerando l'inserimento precedente
-        stop += len(link_start)
-        # Inserisci il tag di chiusura del link subito dopo la posizione di stop
-        stringa = stringa[: stop + 1] + link_end + stringa[stop + 1 :]
-        # Aggiorna l'offset dopo l'inserimento del tag di chiusura
-        offset += len(link_end)
-
-    return stringa
+    return text
 
 
 st.title("Oracle AI Assistant")
@@ -42,9 +41,10 @@ st.text_input("Ask a question:", key="question")
 
 logger = get_console_logger()
 
-span_demarks = [(131, 150), (160, 180)]
-url = ["http://www.oracle.com", "http://www.oracle.com"]
-tooltip = ["Documento 1, pag. 10", "Documento 2, pag. 11"]
+# this is a list of tuples (start, end)
+span_demarks = []
+# this is a list of list [[1,2], [1,3]]
+doc_ids = []
 
 if st.button("Answer"):
     question = st.session_state.question
@@ -52,6 +52,7 @@ if st.button("Answer"):
     with st.spinner("Invoking Command-R..."):
         time_start = time()
 
+        # here we call the LLM
         response = do_query_and_answer(question)
 
         time_elapsed = time() - time_start
@@ -60,7 +61,32 @@ if st.button("Answer"):
 
     answer = response.data.chat_response.text
 
-    # insert marker
-    new_answer = inserisci_link_multipli_con_tooltip(answer, span_demarks, url, tooltip)
+    # handle citations
+    citations = extract_complete_citations(response)
 
-    st.markdown(new_answer, unsafe_allow_html=True)
+    for citation in citations:
+        span_demarks.append(citation["interval"])
+
+        docs_for_this_citation = []
+        for doc in citation["documents"]:
+            docs_for_this_citation.append(doc["id"])
+        doc_ids.append(docs_for_this_citation)
+
+        assert len(doc_ids) == len(span_demarks)
+
+    # insert citation
+    highlighted_text = highlight_substrings(answer, span_demarks, doc_ids)
+
+    st.markdown(highlighted_text, unsafe_allow_html=True)
+
+    # show document for citations
+    extracted_doc = extract_document_list(response)
+
+    st.markdown("")
+    st.markdown("Document list:")
+
+    for doc in extracted_doc:
+        st.markdown(f"[{doc['id']}]: {doc['source']}, pag: {doc['page']}")
+
+    print(citations)
+    print("")

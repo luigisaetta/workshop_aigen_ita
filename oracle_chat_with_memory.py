@@ -164,7 +164,7 @@ def load_uploaded_file_in_vector_store(v_uploaded_file):
         # prepare for loading
         docs = load_book_and_split(temp_file_path)
 
-    embed_model = get_embed_model(config["embedddings"]["embed_model_type"])
+    embed_model = get_embed_model(config["embeddings"]["embed_model_type"])
 
     if config["vector_store"]["store_type"] == "OPENSEARCH":
         add_docs_to_opensearch(docs, embed_model)
