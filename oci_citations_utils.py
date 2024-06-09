@@ -16,10 +16,13 @@ def extract_document_list(response: Response):
     in the section for citations the list of documents
     """
     extracted_docs = []
-    for doc in response.data.chat_response.documents:
-        extracted_docs.append(
-            {"id": doc["id"], "source": doc["source"], "page": doc["page"]}
-        )
+
+    # we must handle the case of no citations
+    if response.data.chat_response.documents is not None:
+        for doc in response.data.chat_response.documents:
+            extracted_docs.append(
+                {"id": doc["id"], "source": doc["source"], "page": doc["page"]}
+            )
 
     # sort in order of increasing id
     sorted_docs = sorted(extracted_docs, key=lambda x: x["id"])
@@ -33,14 +36,17 @@ def extract_citations_from_response(response: Response):
     in the section for citations the list of citations
     """
     extracted_data = []
-    for item in response.data.chat_response.citations:
-        extracted_info = {
-            "start": item.start,
-            "end": item.end,
-            "text": item.text,
-            "document_ids": item.document_ids,
-        }
-        extracted_data.append(extracted_info)
+
+    # we must handle the case of no citations
+    if response.data.chat_response.citations is not None:
+        for item in response.data.chat_response.citations:
+            extracted_info = {
+                "start": item.start,
+                "end": item.end,
+                "text": item.text,
+                "document_ids": item.document_ids,
+            }
+            extracted_data.append(extracted_info)
 
     return extracted_data
 
