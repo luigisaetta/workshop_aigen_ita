@@ -4,7 +4,7 @@ for Italian market
 
 ## Features
 * OpenSearch or **AI Vector Search** as Vector Store
-* **Cohere** or Meta Llama LLM
+* **Cohere** or **Meta Llama 3 70B** Chat Models, available in FRA
 * Manage the **conversation** history
 * Manage **references**
 * Manage **citations**
