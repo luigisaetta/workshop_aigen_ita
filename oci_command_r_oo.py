@@ -18,60 +18,17 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
-import oci
 from oci.generative_ai_inference.models import CohereChatRequest, ChatDetails
 from oci.generative_ai_inference.models import OnDemandServingMode
-from oci.generative_ai_inference import GenerativeAiInferenceClient
-from oci.retry import NoneRetryStrategy
 
+from oci_chat_utils import get_generative_ai_dp_client
 
 logger = logging.getLogger("oci_command_r")
+
 
 # additional
 OCI_CONFIG_DIR = "~/.oci/config"
 TIMEOUT = (10, 240)
-
-
-#
-# supporting functions
-#
-def make_security_token_signer(oci_config):
-    """
-    to add
-    """
-    pk = oci.signer.load_private_key_from_file(oci_config.get("key_file"), None)
-
-    with open(oci_config.get("security_token_file")) as f:
-        st_string = f.read()
-
-    return oci.auth.signers.SecurityTokenSigner(st_string, pk)
-
-
-def get_generative_ai_dp_client(endpoint, profile, use_session_token):
-    """
-    create the client for OCI GenAI
-    """
-    config = oci.config.from_file(OCI_CONFIG_DIR, profile)
-
-    if use_session_token:
-        signer = make_security_token_signer(oci_config=config)
-
-        client = GenerativeAiInferenceClient(
-            config=config,
-            signer=signer,
-            service_endpoint=endpoint,
-            retry_strategy=NoneRetryStrategy(),
-            timeout=TIMEOUT,
-        )
-    else:
-        client = GenerativeAiInferenceClient(
-            config=config,
-            service_endpoint=endpoint,
-            retry_strategy=NoneRetryStrategy(),
-            timeout=TIMEOUT,
-        )
-
-    return client
 
 
 class OCICommandR(BaseChatModel):
@@ -108,6 +65,8 @@ class OCICommandR(BaseChatModel):
     auth_profile: Optional[str] = "DEFAULT"
     preamble_override: Optional[str] = None
     is_streaming: Optional[bool] = False
+    is_search_queries_only: Optional[bool] = (False,)
+    """if true generate only a condensed query using chat_history"""
 
     def __init__(
         self,
@@ -121,6 +80,7 @@ class OCICommandR(BaseChatModel):
         auth_type: Optional[str] = "API_KEY",
         auth_profile: Optional[str] = "DEFAULT",
         preamble_override: Optional[str] = None,
+        is_search_queries_only: Optional[bool] = False,
         is_streaming: Optional[bool] = False,
     ):
         """
@@ -141,6 +101,7 @@ class OCICommandR(BaseChatModel):
             auth_type=auth_type,
             auth_profile=auth_profile,
             preamble_override=preamble_override,
+            is_search_queries_only=is_search_queries_only,
             is_streaming=is_streaming,
         )
 
@@ -166,6 +127,9 @@ class OCICommandR(BaseChatModel):
 
         # override the preamble
         chat_request.preamble_override = self.preamble_override
+        chat_request.is_search_queries_only = self.is_search_queries_only
+
+        # if search_query_only
 
         # control the max length of the answer from LLM
         chat_request.max_tokens = self.max_tokens
@@ -206,7 +170,8 @@ class OCICommandR(BaseChatModel):
 
     def print_response(self, chat_response):
         """
-        helper function to print handling streaming/no_streaming
+        helper function to print LLm output
+        handling streaming/no_streaming
         """
         print("")
 
@@ -214,7 +179,9 @@ class OCICommandR(BaseChatModel):
             for event in chat_response.data.events():
                 res = json.loads(event.data)
                 if "text" in res.keys():
-                    print(res["text"], end="", flush=True)
+                    # 9/06 (added to remove duplication of text)
+                    if "finishReason" not in res.keys():
+                        print(res["text"], end="", flush=True)
 
             print("\n")
         else:

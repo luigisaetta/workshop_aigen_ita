@@ -15,61 +15,18 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
-import oci
 from oci.generative_ai_inference.models import GenericChatRequest, ChatDetails
 from oci.generative_ai_inference.models import BaseChatRequest, TextContent, Message
 from oci.generative_ai_inference.models import OnDemandServingMode
 from oci.generative_ai_inference import GenerativeAiInferenceClient
-from oci.retry import NoneRetryStrategy
 
+from oci_chat_utils import get_generative_ai_dp_client
 
 logger = logging.getLogger("oci_llama3")
 
 # additional
 OCI_CONFIG_DIR = "~/.oci/config"
 TIMEOUT = (10, 240)
-
-
-#
-# supporting functions
-#
-def make_security_token_signer(oci_config):
-    """
-    to add
-    """
-    pk = oci.signer.load_private_key_from_file(oci_config.get("key_file"), None)
-
-    with open(oci_config.get("security_token_file")) as f:
-        st_string = f.read()
-
-    return oci.auth.signers.SecurityTokenSigner(st_string, pk)
-
-
-def get_generative_ai_dp_client(endpoint, profile, use_session_token):
-    """
-    create the client for OCI GenAI
-    """
-    config = oci.config.from_file(OCI_CONFIG_DIR, profile)
-
-    if use_session_token:
-        signer = make_security_token_signer(oci_config=config)
-
-        client = GenerativeAiInferenceClient(
-            config=config,
-            signer=signer,
-            service_endpoint=endpoint,
-            retry_strategy=NoneRetryStrategy(),
-            timeout=TIMEOUT,
-        )
-    else:
-        client = GenerativeAiInferenceClient(
-            config=config,
-            service_endpoint=endpoint,
-            retry_strategy=NoneRetryStrategy(),
-            timeout=TIMEOUT,
-        )
-
-    return client
 
 
 class OCILlama3(BaseChatModel):
@@ -88,7 +45,7 @@ class OCILlama3(BaseChatModel):
     client: Any
     """ the client for OCI genai"""
 
-    model_name = "command-r"
+    model_name = "llama-3-70b-instruct"
 
     model: str
     """the model_id"""
@@ -161,6 +118,7 @@ class OCILlama3(BaseChatModel):
         #  here we should also send the chat history
         chat_request.messages = [message]
         # parameters
+        chat_request.is_stream = self.is_streaming
         chat_request.max_tokens = self.max_tokens
         chat_request.temperature = self.temperature
         chat_request.top_p = self.top_p
@@ -188,10 +146,11 @@ class OCILlama3(BaseChatModel):
         print("")
 
         if self.is_streaming:
+            # 9/06/2024: updated to support streaming
             for event in chat_response.data.events():
                 res = json.loads(event.data)
-                if "text" in res.keys():
-                    print(res["text"], end="", flush=True)
+                if "message" in res.keys():
+                    print(res["message"]["content"][0]["text"], end="", flush=True)
 
             print("\n")
         else:

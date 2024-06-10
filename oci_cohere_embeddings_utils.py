@@ -3,6 +3,8 @@ Author: Luigi Saetta
 Date created: 2024-04-27
 Date last modified: 2024-05-23
 Python Version: 3.11
+
+License: MIT
 """
 
 from tqdm.auto import tqdm

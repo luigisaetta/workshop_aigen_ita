@@ -9,6 +9,10 @@ from factory_for_citations_demo import do_query_and_answer
 from utils import get_console_logger
 from oci_citations_utils import extract_complete_citations, extract_document_list
 
+# Constant
+USER = "user"
+ASSISTANT = "assistant"
+
 
 def highlight_substrings(text, delimiters, doc_ids_list):
     """
