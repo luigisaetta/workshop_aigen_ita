@@ -172,6 +172,16 @@ def load_uploaded_file_in_vector_store(v_uploaded_file):
         add_docs_to_23ai(docs, embed_model)
 
 
+def rimuovi_caratteri_dopo_sottostringa(stringa, sottostringa):
+    """
+    to remove references from chat_history
+    """
+    indice = stringa.find(sottostringa)
+    # Se la sottostringa è trovata, ritorna la parte della stringa prima dell'indice
+    # Altrimenti ritorna la stringa originale
+    return stringa[:indice] if indice != -1 else stringa
+
+
 #
 # Main
 #
@@ -265,6 +275,9 @@ if question := st.chat_input(config["ui"]["hello_msg"]):
                 output = nostream_output(ai_msg)
 
             # Add assistant response to chat history
+
+            # remove references
+            output = rimuovi_caratteri_dopo_sottostringa(output, "Reference")
             st.session_state.chat_history.append(AIMessage(content=output))
 
         logger.info("Elapsed time: %s sec.", round((time.time() - time_start), 1))
