@@ -1,10 +1,12 @@
 """"
 Experimental client for Llama3 in OCI
-
-last update: 07/06/2024
+inspired by: 
+    https://python.langchain.com/v0.1/docs/modules/model_io/chat/custom_chat_model/
+    
+last update: 10/06/2024
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Iterator
 import logging
 import json
 
@@ -12,13 +14,13 @@ from langchain_core.callbacks import (
     CallbackManagerForLLMRun,
 )
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, AIMessageChunk
 from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.outputs import ChatGenerationChunk
 
 from oci.generative_ai_inference.models import GenericChatRequest, ChatDetails
 from oci.generative_ai_inference.models import BaseChatRequest, TextContent, Message
 from oci.generative_ai_inference.models import OnDemandServingMode
-from oci.generative_ai_inference import GenerativeAiInferenceClient
 
 from oci_chat_utils import get_generative_ai_dp_client
 
@@ -45,7 +47,7 @@ class OCILlama3(BaseChatModel):
     client: Any
     """ the client for OCI genai"""
 
-    model_name = "llama-3-70b-instruct"
+    model_name = "meta.llama-3-70b-instruct"
 
     model: str
     """the model_id"""
@@ -102,23 +104,50 @@ class OCILlama3(BaseChatModel):
             use_session_token=False,
         )
 
-    def invoke(self, query: str, chat_history: List, documents: List):
+    #
+    # This is called by streaming and non-streaming
+    #
+    def _handle_request(
+        self,
+        messages: List[BaseMessage],
+        is_streaming: Optional[bool] = False,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ):
+        """
+        This is called by streaming and non-streaming
+
+        is_streaming: to discriminate if the request comes from stream or generate
+        """
+        # prepare the request for OCI Python SDK
         chat_detail = ChatDetails()
 
-        content = TextContent()
-        # here we set the user request
-        content.text = f"{query}"
-        message = Message()
-        message.role = "USER"
-        message.content = [content]
+        # process the list of messages and translate to OCI format
+        oci_msgs = []
+        for in_msg in messages:
+            if isinstance(in_msg, HumanMessage):
+                role = "USER"
+            elif isinstance(in_msg, AIMessage):
+                role = "ASSISTANT"
+            else:
+                role = "SYSTEM"
+
+            content = TextContent()
+            content.text = in_msg.content
+            message = Message()
+            message.role = role
+            message.content = [content]
+
+            oci_msgs.append(message)
 
         chat_request = GenericChatRequest()
         chat_request.api_format = BaseChatRequest.API_FORMAT_GENERIC
 
-        #  here we should also send the chat history
-        chat_request.messages = [message]
+        #  here we send also the chat history
+        chat_request.messages = oci_msgs
         # parameters
-        chat_request.is_stream = self.is_streaming
+        chat_request.is_stream = is_streaming
         chat_request.max_tokens = self.max_tokens
         chat_request.temperature = self.temperature
         chat_request.top_p = self.top_p
@@ -132,12 +161,69 @@ class OCILlama3(BaseChatModel):
         # here we call the LLM
         #
         try:
-            chat_response = self.client.chat(chat_detail)
+            response = self.client.chat(chat_detail)
         except Exception as e:
             logger.error("Error in invoke: %s", e)
-            chat_response = None
+            response = None
 
-        return chat_response
+        return response
+
+    # We need this, for LangChain compatibility... complete !
+    def _generate(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        response = self._handle_request(messages, is_streaming=False)
+
+        # prepare the output
+        out_message = AIMessage(
+            content=response.data.chat_response.choices[0].message.content[0].text,
+            response_metadata={},
+        )
+
+        generation = ChatGeneration(message=out_message)
+        return ChatResult(generations=[generation])
+
+    def _stream(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> Iterator[ChatGenerationChunk]:
+        """Stream the output of the model.
+
+        This method should be implemented if the model can generate output
+        in a streaming fashion. If the model does not support streaming,
+        do not implement it. In that case streaming requests will be automatically
+        handled by the _generate method.
+
+        Args:
+            messages: the prompt composed of a list of messages.
+            stop: a list of strings on which the model should stop generating.
+                  If generation stops due to a stop token, the stop token itself
+                  SHOULD BE INCLUDED as part of the output. This is not enforced
+                  across models right now, but it's a good practice to follow since
+                  it makes it much easier to parse the output of the model
+                  downstream and understand why generation stopped.
+            run_manager: A run manager with callbacks for the LLM.
+        """
+        response = self._handle_request(messages, is_streaming=True)
+
+        for event in response.data.events():
+            res = json.loads(event.data)
+            if "message" in res.keys():
+                content = res["message"]["content"][0]["text"]
+                chunk = ChatGenerationChunk(message=AIMessageChunk(content=content))
+            yield chunk
+
+        chunk = ChatGenerationChunk(
+            message=AIMessageChunk(content="", response_metadata={})
+        )
+        yield chunk
 
     def print_response(self, chat_response):
         """
@@ -147,15 +233,13 @@ class OCILlama3(BaseChatModel):
 
         if self.is_streaming:
             # 9/06/2024: updated to support streaming
-            for event in chat_response.data.events():
-                res = json.loads(event.data)
-                if "message" in res.keys():
-                    print(res["message"]["content"][0]["text"], end="", flush=True)
+            for chunk in chat_response:
+                print(chunk.content, end="", flush=True)
 
             print("\n")
         else:
             # no streaming
-            print(chat_response.data.chat_response.choices[0].message.content[0].text)
+            print(chat_response.content)
             print("")
 
     # for LangChain compatibility
@@ -166,11 +250,10 @@ class OCILlama3(BaseChatModel):
 
     @property
     def _default_params(self) -> Dict[str, Any]:
-        """Get the default parameters for calling Cohere API."""
+        """Get the default parameters for calling."""
         base_params = {
             "model": self.model,
             "temperature": self.temperature,
-            "preamble": self.preamble,
         }
         return {k: v for k, v in base_params.items() if v is not None}
 
@@ -178,17 +261,3 @@ class OCILlama3(BaseChatModel):
     def _identifying_params(self) -> Dict[str, Any]:
         """Get the identifying parameters."""
         return self._default_params
-
-    # We need this, for LangChain compatibility... complete !
-    def _generate(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> ChatResult:
-        # simulate an output
-        message = AIMessage(content="Hello,...")
-
-        generation = ChatGeneration(message=message)
-        return ChatResult(generations=[generation])

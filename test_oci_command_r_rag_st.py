@@ -81,6 +81,8 @@ if st.button("Answer"):
     # insert citation
     highlighted_text = highlight_substrings(answer, span_demarks, doc_ids)
 
+    # logger.info(answer)
+
     st.markdown(highlighted_text, unsafe_allow_html=True)
 
     # show document for citations
