@@ -8,7 +8,7 @@ verbose = false
 
 # enable tracing with langsmith
 [tracing]
-enable = true
+enable = false
 langchain_project = "workshop-1"
 
 [text_splitting]
@@ -21,7 +21,7 @@ embed_model_type = "OCI"
 
 [embeddings.oci]
 embed_batch_size = 90
-embed_endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
+embed_endpoint = "https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com"
 embed_model = "cohere.embed-multilingual-v3.0"
 
 [embeddings.cohere]
@@ -30,7 +30,8 @@ embed_model = "cohere.embed-multilingual-v3.0"
 # store_type: OPENSEARCH, 23AI
 [vector_store]
 collection_name = "ORACLE_KNOWLEDGE"
-store_type = "OPENSEARCH"
+store_type = "23AI"
+# store_type = "OPENSEARCH"
 
 [vector_store.opensearch]
 bulk_size = 5000
@@ -42,7 +43,7 @@ ssl_show_warn = false
 use_ssl = true
 verify_certs = false
 
-[vector_store.o23ai]
+[vector_store.23ai]
 embeddings_bit = 32
 
 [reranker]
@@ -51,18 +52,31 @@ cohere_reranker_model = "rerank-multilingual-v3.0"
 
 [retriever]
 top_k = 8
-top_n = 4
+top_n = 6
 
 # general llm
 [llm]
 max_tokens = 1024
-model_type = "COHERE"
+model_type = "OCI"
 temperature = 0.1
+top_k = 1
+top_p = 0.15
 
 [llm.oci]
-endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
-llm_model = "meta.llama-2-70b-chat"
+# endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
+# endpoint = "https://ppe.inference.generativeai.us-chicago-1.oci.oraclecloud.com"
+# FRA
+endpoint = "https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com"
 
-# can be connad-r-plus
+# llm_model = "cohere.command-r-16k"
+# llm_model = "cohere.command-r-plus"
+llm_model = "meta.llama-3-70b-instruct"
+
+# preamble_id = "preamble3"
+preamble_id = "preamble01"
+compartment_ocid = "ocid1.compartment.oc1..aaaaaaaaushuwb2evpuf7rcpl4r7ugmqoe7ekmaiik3ra3m7gec3d234eknq"
+
+# This one for Cohere on cohere.com
+# can be command-r-plus
 [llm.cohere]
 llm_model = "command-r"

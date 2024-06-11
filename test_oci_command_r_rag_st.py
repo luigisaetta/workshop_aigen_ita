@@ -3,6 +3,7 @@ Streamlit client for simple test on OCI Command R
 """
 
 from time import time
+from pprint import pprint
 import streamlit as st
 
 from factory_for_citations_demo import do_query_and_answer
@@ -94,5 +95,5 @@ if st.button("Answer"):
     for doc in extracted_doc:
         st.markdown(f"[{doc['id']}]: {doc['source']}, pag: {doc['page']}")
 
-    print(citations)
+    pprint(citations)
     print("")

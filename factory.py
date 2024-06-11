@@ -24,7 +24,7 @@ from oci_cohere_embeddings_utils import OCIGenAIEmbeddingsWithBatch
 from oci_llama3_oo import OCILlama3
 
 # prompts
-from oracle_chat_prompts import CONTEXT_Q_PROMPT, QA_PROMPT
+from oracle_chat_prompts import CONTEXT_Q_PROMPT, QA_PROMPT, QA_PROMPT_IT
 
 from utils import print_configuration, check_value_in_list, load_configuration
 
@@ -153,7 +153,7 @@ def build_rag_chain(verbose):
     # 2. create the chain for answering
     # we need to use a different prompt from the one used to
     # condense the standalone question
-    question_answer_chain = create_stuff_documents_chain(llm, QA_PROMPT)
+    question_answer_chain = create_stuff_documents_chain(llm, QA_PROMPT_IT)
 
     # 3, the entire chain
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)

@@ -39,3 +39,20 @@ QA_PROMPT = ChatPromptTemplate.from_messages(
         ("human", "{input}"),
     ]
 )
+
+#
+# prompt for italian language
+#
+QA_SYSTEM_PROMPT_IT = """Sei un assistente per task di domanda-risposta. \
+Utilizza i frammenti seguenti di testo per rispondere alla domanda. \
+Se non conosci la risposta, dici semplicemente che non conosci la risposta \
+
+{context}"""
+
+QA_PROMPT_IT = ChatPromptTemplate.from_messages(
+    [
+        ("system", QA_SYSTEM_PROMPT_IT),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ]
+)
