@@ -218,7 +218,7 @@ class OCILlama3(BaseChatModel):
             if "message" in res.keys():
                 content = res["message"]["content"][0]["text"]
                 chunk = ChatGenerationChunk(message=AIMessageChunk(content=content))
-            yield chunk
+                yield chunk
 
         chunk = ChatGenerationChunk(
             message=AIMessageChunk(content="", response_metadata={})
