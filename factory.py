@@ -65,11 +65,12 @@ def get_llm(model_type="OCI"):
 
     logger = logging.getLogger("ConsoleLogger")
 
-    model_id = config["llm"]["oci"]["llm_model"]
     max_tokens = config["llm"]["max_tokens"]
     temperature = config["llm"]["temperature"]
 
     if model_type == "OCI":
+        model_id = config["llm"]["oci"]["llm_model"]
+
         if model_id.startswith("meta"):
             # selected llama3
             logger.info("Selected Llama3 as ChatModel...")
@@ -83,6 +84,7 @@ def get_llm(model_type="OCI"):
                 is_streaming=True,
             )
         else:
+            # this supports only the old, non chat, models
             llm = OCIGenAI(
                 auth_type="API_KEY",
                 model_id=model_id,
@@ -94,6 +96,8 @@ def get_llm(model_type="OCI"):
                 },
             )
     if model_type == "COHERE":
+        model_id = config["llm"]["cohere"]["llm_model"]
+
         llm = ChatCohere(
             cohere_api_key=COHERE_API_KEY,
             model=model_id,
@@ -153,7 +157,9 @@ def build_rag_chain(verbose):
     # 2. create the chain for answering
     # we need to use a different prompt from the one used to
     # condense the standalone question
-    question_answer_chain = create_stuff_documents_chain(llm, QA_PROMPT_IT)
+
+    # be careful if english or italian
+    question_answer_chain = create_stuff_documents_chain(llm, QA_PROMPT)
 
     # 3, the entire chain
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)

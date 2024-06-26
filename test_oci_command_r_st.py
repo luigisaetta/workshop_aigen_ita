@@ -52,8 +52,8 @@ chat_history = []
 documents = []
 
 span_demarks = [(131, 150), (160, 180)]
-url = ["http://www.oracle.com", "http://www.oracle.com"]
-tooltip = ["Documento 1, pag. 10", "Documento 2, pag. 11"]
+URL = ["http://www.oracle.com", "http://www.oracle.com"]
+TOOLTIP = ["Documento 1, pag. 10", "Documento 2, pag. 11"]
 
 if st.button("Answer"):
     question = st.session_state.question
@@ -64,6 +64,6 @@ if st.button("Answer"):
     answer = response.data.chat_response.text
 
     # insert marker
-    new_answer = inserisci_link_multipli_con_tooltip(answer, span_demarks, url, tooltip)
+    new_answer = inserisci_link_multipli_con_tooltip(answer, span_demarks, URL, TOOLTIP)
 
     st.markdown(new_answer, unsafe_allow_html=True)

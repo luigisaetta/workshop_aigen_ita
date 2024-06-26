@@ -66,7 +66,7 @@ def get_oracle_vs(embed_model):
         # get an instance of OracleVS
         v_store = OracleVS(
             client=connection,
-            table_name="ORACLE_KNOWLEDGE",
+            table_name="DOE_DUBAI",
             distance_strategy=DistanceStrategy.COSINE,
             embedding_function=embed_model,
         )
@@ -146,7 +146,12 @@ def do_query_and_answer(query):
     time_start = time()
 
     # for now I'm not using the chat history
-    response = chat.invoke(query=query, chat_history=[], documents=documents_txt)
+    response = None
+
+    try:
+        response = chat.invoke(query=query, chat_history=[], documents=documents_txt)
+    except Exception as e:
+        logger.error("Exception in do_query_and_answer", e)
 
     time_elapsed = round(time() - time_start, 1)
     logger.info("Time for chat invoke: %s sec ...", time_elapsed)

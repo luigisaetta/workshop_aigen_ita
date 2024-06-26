@@ -31,8 +31,8 @@ Usa sempre la lingua italiana. Inizia ogni risposta con Ciao, ma si cortese ed e
 """
 
 chat = OCICommandR(
-    model="cohere.command-r-16k",
-    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
+    model="cohere.command-r-plus",
+    service_endpoint="https://ppe.inference.generativeai.us-chicago-1.oci.oraclecloud.com",
     compartment_id="ocid1.compartment.oc1..aaaaaaaaushuwb2evpuf7rcpl4r7ugmqoe7ekmaiik3ra3m7gec3d234eknq",
     max_tokens=1024,
     is_streaming=True,

@@ -67,7 +67,7 @@ def find_source_page_by_id(data: dict, search_id) -> tuple:
 
 def extract_complete_citations(response: Response) -> list:
     """
-    This function extract form the Cohere response
+    This function extract from the Cohere response
     documents and citations and complete citations with source, page
     """
     extracted_doc = extract_document_list(response)

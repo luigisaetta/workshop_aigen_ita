@@ -74,10 +74,24 @@ def format_references(v_docs):
     """
     format the references to add at the end of response
     """
-    references = "\n\nReferences:\n\n"
+
+    # patch, increase pag by 1 to fix that Langchain starts with 0
+    # to remove duplication
+    list_ref = []
+
     for doc in v_docs:
         ref_name = remove_path_from_ref(doc.metadata["source"])
-        references += f"- {ref_name}, pag: {doc.metadata['page']}\n"
+        the_ref = f"- {ref_name}, pag: {int(doc.metadata['page']) + 1}\n"
+        
+        # to remove duplicates
+        if the_ref not in list_ref:
+            list_ref.append(the_ref)
+    
+    #build the final string
+    references = "\n\nReferences:\n\n"
+    for the_ref in list_ref:
+        references += the_ref
+    
     return references
 
 

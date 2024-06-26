@@ -1,5 +1,6 @@
 """"
 Experimental client for Llama3 in OCI
+compatible with LangChain
 inspired by: 
     https://python.langchain.com/v0.1/docs/modules/model_io/chat/custom_chat_model/
     
@@ -121,41 +122,34 @@ class OCILlama3(BaseChatModel):
         is_streaming: to discriminate if the request comes from stream or generate
         """
         # prepare the request for OCI Python SDK
-        chat_detail = ChatDetails()
 
         # process the list of messages and translate to OCI format
+        role_map = {HumanMessage: "USER", AIMessage: "ASSISTANT"}
+
         oci_msgs = []
         for in_msg in messages:
-            if isinstance(in_msg, HumanMessage):
-                role = "USER"
-            elif isinstance(in_msg, AIMessage):
-                role = "ASSISTANT"
-            else:
-                role = "SYSTEM"
+            role = role_map.get(type(in_msg), "SYSTEM")
 
-            content = TextContent()
-            content.text = in_msg.content
-            message = Message()
-            message.role = role
-            message.content = [content]
+            content = TextContent(text=in_msg.content)
+            message = Message(role=role, content=[content])
 
             oci_msgs.append(message)
 
-        chat_request = GenericChatRequest()
-        chat_request.api_format = BaseChatRequest.API_FORMAT_GENERIC
+        chat_request = GenericChatRequest(
+            api_format=BaseChatRequest.API_FORMAT_GENERIC,
+            messages=oci_msgs,
+            is_stream=is_streaming,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            top_p=self.top_p,
+            top_k=self.top_k,
+        )
 
-        #  here we send also the chat history
-        chat_request.messages = oci_msgs
-        # parameters
-        chat_request.is_stream = is_streaming
-        chat_request.max_tokens = self.max_tokens
-        chat_request.temperature = self.temperature
-        chat_request.top_p = self.top_p
-        chat_request.top_k = self.top_k
-
-        chat_detail.serving_mode = OnDemandServingMode(model_id=self.model)
-        chat_detail.chat_request = chat_request
-        chat_detail.compartment_id = self.compartment_id
+        chat_detail = ChatDetails(
+            serving_mode=OnDemandServingMode(model_id=self.model),
+            chat_request=chat_request,
+            compartment_id=self.compartment_id,
+        )
 
         #
         # here we call the LLM
