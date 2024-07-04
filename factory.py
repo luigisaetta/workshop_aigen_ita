@@ -16,15 +16,14 @@ from langchain.chains import create_history_aware_retriever
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 
-# LLM
-from langchain_community.llms import OCIGenAI
+# (4/07/2024) replaced with new OCI Models
+from langchain_community.chat_models.oci_generative_ai import ChatOCIGenAI
 
 from factory_vector_store import get_vector_store
 from oci_cohere_embeddings_utils import OCIGenAIEmbeddingsWithBatch
-from oci_llama3_oo import OCILlama3
 
 # prompts
-from oracle_chat_prompts import CONTEXT_Q_PROMPT, QA_PROMPT, QA_PROMPT_IT
+from oracle_chat_prompts import CONTEXT_Q_PROMPT, QA_PROMPT
 
 from utils import print_configuration, check_value_in_list, load_configuration
 
@@ -71,30 +70,19 @@ def get_llm(model_type="OCI"):
     if model_type == "OCI":
         model_id = config["llm"]["oci"]["llm_model"]
 
-        if model_id.startswith("meta"):
-            # selected llama3
-            logger.info("Selected Llama3 as ChatModel...")
+        logger.info("Selected %s as ChatModel...", model_id)
 
-            llm = OCILlama3(
-                model=model_id,
-                service_endpoint=config["llm"]["oci"]["endpoint"],
-                compartment_id=COMPARTMENT_ID,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                is_streaming=True,
-            )
-        else:
-            # this supports only the old, non chat, models
-            llm = OCIGenAI(
-                auth_type="API_KEY",
-                model_id=model_id,
-                service_endpoint=config["llm"]["oci"]["endpoint"],
-                compartment_id=COMPARTMENT_ID,
-                model_kwargs={
-                    "max_tokens": max_tokens,
-                    "temperature": temperature,
-                },
-            )
+        llm = ChatOCIGenAI(
+            auth_type="API_KEY",
+            model_id=model_id,
+            service_endpoint=config["llm"]["oci"]["endpoint"],
+            compartment_id=COMPARTMENT_ID,
+            model_kwargs={
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            },
+        )
+
     if model_type == "COHERE":
         model_id = config["llm"]["cohere"]["llm_model"]
 

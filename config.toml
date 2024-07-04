@@ -2,8 +2,12 @@
 [ui]
 add_references = true
 do_streaming = true
-hello_msg = "Ciao, come posso aiutarti?"
-title = "AI Assistant with LangChain 🦜"
+# hello_msg = "Ciao, come posso aiutarti?"
+hello_msg = "Hello, how can I assist you?"
+# title = "My AI Assistant with LangChain 🦜"
+title = "My Oracle AI Assistant"
+
+# title = "AI Assistant for DOE Dubai"
 verbose = false
 
 # enable tracing with langsmith
@@ -12,7 +16,7 @@ enable = false
 langchain_project = "workshop-1"
 
 [text_splitting]
-books_dir = "./books"
+books_dir = "./books_med"
 chunk_overlap = 50
 chunk_size = 1500
 
@@ -29,14 +33,15 @@ embed_model = "cohere.embed-multilingual-v3.0"
 # vector store
 # store_type: OPENSEARCH, 23AI
 [vector_store]
-collection_name = "ORACLE_KNOWLEDGE"
+collection_name = "MY_BOOKS"
+# collection_name = "med01"
 store_type = "23AI"
 # store_type = "OPENSEARCH"
 
 [vector_store.opensearch]
 bulk_size = 5000
 engine = "faiss"
-index_name = "test1"
+index_name = "med01"
 opensearch_url = "https://localhost:9200"
 ssl_assert_hostname = false
 ssl_show_warn = false
@@ -56,21 +61,20 @@ top_n = 6
 
 # general llm
 [llm]
-max_tokens = 1024
+max_tokens = 2048
 model_type = "OCI"
-temperature = 0.1
+temperature = 0
 top_k = 1
-top_p = 0.15
+top_p = 1
 
 [llm.oci]
 # endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
-# endpoint = "https://ppe.inference.generativeai.us-chicago-1.oci.oraclecloud.com"
 # FRA
 endpoint = "https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com"
 
 # llm_model = "cohere.command-r-16k"
-# llm_model = "cohere.command-r-plus"
-llm_model = "meta.llama-3-70b-instruct"
+llm_model = "cohere.command-r-plus"
+# llm_model = "meta.llama-3-70b-instruct"
 
 # preamble_id = "preamble3"
 preamble_id = "preamble01"
