@@ -63,11 +63,13 @@ def reset_conversation():
 # defined here to avoid import of streamlit in other module
 # cause we need here to use @cache
 @st.cache_resource
-def create_chat_engine(verbose=config["ui"]["verbose"]):
+def create_chat_engine(
+    verbose=config["ui"]["verbose"], model_id="cohere.command-r-16k"
+):
     """
     Create the entire RAG chain
     """
-    return build_rag_chain(verbose=verbose)
+    return build_rag_chain(verbose=verbose, model_id=model_id)
 
 
 def format_references(v_docs):
@@ -88,9 +90,7 @@ def format_references(v_docs):
             list_ref.append(the_ref)
 
     # build the final string
-    references = "\n\nReferences:\n\n"
-    for the_ref in list_ref:
-        references += the_ref
+    references = "\n\nReferences:\n\n" + "\n".join(list_ref)
 
     return references
 
@@ -196,6 +196,19 @@ def rimuovi_caratteri_dopo_sottostringa(stringa, sottostringa):
     return stringa[:indice] if indice != -1 else stringa
 
 
+def get_model_list():
+    """
+    return list of available llm
+    """
+
+    # aligned with official names
+    return [
+        "cohere.command-r-16k",
+        "cohere.command-r-plus",
+        "meta.llama-3-70b-instruct",
+    ]
+
+
 #
 # Main
 #
@@ -218,6 +231,10 @@ if st.sidebar.button("Clear Chat History"):
     reset_conversation()
 
 
+# add the choice of LLM
+model_list = get_model_list()
+model_id = st.sidebar.selectbox("Select LLM", model_list)
+
 # to load other pdf
 uploaded_file = st.sidebar.file_uploader(
     label="Upload files", type=["pdf"], accept_multiple_files=False
@@ -231,7 +248,7 @@ if uploaded_file:
     logger.info("Loaded !")
 
     # reload the rag_chain (do we need?)
-    rag_chain = build_rag_chain(verbose=config["ui"]["verbose"])
+    rag_chain = build_rag_chain(verbose=config["ui"]["verbose"], model_id=model_id)
 
     uploaded_file = None
 
@@ -242,7 +259,7 @@ if "chat_history" not in st.session_state:
 # init RAG
 with st.spinner("Initializing RAG chain..."):
     # here we create the query engine
-    rag_chain = create_chat_engine(verbose=config["ui"]["verbose"])
+    rag_chain = create_chat_engine(verbose=config["ui"]["verbose"], model_id=model_id)
 
 # Display chat messages from history on app rerun
 display_msg_on_rerun(st.session_state.chat_history)

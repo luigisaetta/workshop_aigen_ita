@@ -56,7 +56,7 @@ def get_embed_model(model_type="OCI"):
     return embed_model
 
 
-def get_llm(model_type="OCI"):
+def get_llm(model_type="OCI", model_id="cohere.command-r-16k"):
     """
     Build and return the LLM client
     """
@@ -68,7 +68,7 @@ def get_llm(model_type="OCI"):
     temperature = config["llm"]["temperature"]
 
     if model_type == "OCI":
-        model_id = config["llm"]["oci"]["llm_model"]
+        # take the value given as input
 
         logger.info("Selected %s as ChatModel...", model_id)
 
@@ -98,7 +98,7 @@ def get_llm(model_type="OCI"):
 #
 # create the entire RAG chain
 #
-def build_rag_chain(verbose):
+def build_rag_chain(verbose, model_id="cohere.command-r-16k"):
     """
     Build the entire RAG chain
     """
@@ -134,7 +134,8 @@ def build_rag_chain(verbose):
         # no reranker
         retriever = base_retriever
 
-    llm = get_llm(model_type=config["llm"]["model_type"])
+    # LS, 08/07 changed, llm can be chosen via UI
+    llm = get_llm(model_type=config["llm"]["model_type"], model_id=model_id)
 
     # steps to add chat_history
     # 1. create a retriever using chat history
