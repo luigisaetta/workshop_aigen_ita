@@ -7,6 +7,9 @@ from oci_command_r_oo import OCICommandR
 
 
 def inserisci_link_multipli_con_tooltip(stringa, intervalli, urls, tooltips):
+    """
+    to add
+    """
     # Offset totale dovuto agli inserimenti
     offset = 0
 

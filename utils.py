@@ -105,10 +105,6 @@ def print_configuration(config):
 
     LLM_MODEL_TYPE = config["llm"]["model_type"]
     logger.info(" Using %s as Generative Model type...", LLM_MODEL_TYPE)
-    if LLM_MODEL_TYPE == "COHERE":
-        logger.info(" Using %s for LLM...", config["llm"]["cohere"]["llm_model"])
-    if LLM_MODEL_TYPE == "OCI":
-        logger.info(" Using %s for LLM...", config["llm"]["oci"]["llm_model"])
 
     if config["tracing"]["enable"] == "true":
         logger.info("")

@@ -27,12 +27,12 @@ chat_history = [msg1, msg2]
 # no grounded
 documents = []
 
-query = "Quali possono essere gli effetti collaterali nei bambini e negli adolescenti?"
+QUERY = "Quali possono essere gli effetti collaterali nei bambini e negli adolescenti?"
 
-response = chat.invoke(query, chat_history, documents=[])
+response = chat.invoke(QUERY, chat_history, documents=[])
 
 print("Message history: ", chat_history)
 print("")
-print("Query originaria ", query)
+print("Query originaria ", QUERY)
 print("Query modificata:")
 print(response.data.chat_response.search_queries[0].text)

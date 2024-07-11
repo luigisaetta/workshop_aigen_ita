@@ -151,7 +151,7 @@ def do_query_and_answer(query):
     try:
         response = chat.invoke(query=query, chat_history=[], documents=documents_txt)
     except Exception as e:
-        logger.error("Exception in do_query_and_answer", e)
+        logger.error("Exception in do_query_and_answer %s", e)
 
     time_elapsed = round(time() - time_start, 1)
     logger.info("Time for chat invoke: %s sec ...", time_elapsed)

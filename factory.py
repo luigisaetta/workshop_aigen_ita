@@ -44,7 +44,9 @@ def get_embed_model(model_type="OCI"):
     """
     get the Embeddings Model
     """
-    check_value_in_list(model_type, ["OCI", "COHERE"])
+    check_value_in_list(model_type, ["OCI"])
+
+    embed_model = None
 
     if model_type == "OCI":
         embed_model = OCIGenAIEmbeddingsWithBatch(
@@ -67,10 +69,12 @@ def get_llm(model_type="OCI", model_id="cohere.command-r-16k"):
     max_tokens = config["llm"]["max_tokens"]
     temperature = config["llm"]["temperature"]
 
+    llm = None
+
     if model_type == "OCI":
         # take the value given as input
 
-        logger.info("Selected %s as ChatModel...", model_id)
+        logger.info(" Selected %s as ChatModel...", model_id)
 
         llm = ChatOCIGenAI(
             auth_type="API_KEY",
@@ -106,6 +110,9 @@ def build_rag_chain(verbose, model_id="cohere.command-r-16k"):
 
     # print all the used configuration to the console
     print_configuration(config)
+
+    logger.info(" Using %s as ChatModel...", model_id)
+    logger.info("")
 
     embed_model = get_embed_model(config["embeddings"]["embed_model_type"])
 

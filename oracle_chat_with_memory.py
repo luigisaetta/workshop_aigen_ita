@@ -62,7 +62,7 @@ def reset_conversation():
 
 # defined here to avoid import of streamlit in other module
 # cause we need here to use @cache
-@st.cache_resource
+# @st.cache_resource
 def create_chat_engine(
     verbose=config["ui"]["verbose"], model_id="cohere.command-r-16k"
 ):
@@ -77,12 +77,11 @@ def format_references(v_docs):
     format the references to add at the end of response
     """
 
-    # patch, increase pag by 1 to fix that Langchain starts with 0
-    # to remove duplication
     list_ref = []
 
     for doc in v_docs:
         ref_name = remove_path_from_ref(doc.metadata["source"])
+        # patch, increase pag by 1 to fix that Langchain starts with 0
         the_ref = f"- {ref_name}, pag: {int(doc.metadata['page']) + 1}\n"
 
         # to remove duplicates
