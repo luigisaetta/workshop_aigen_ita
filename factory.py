@@ -8,7 +8,7 @@ Python Version: 3.11
 import logging
 
 # Cohere
-from langchain_cohere import ChatCohere, CohereRerank
+from langchain_cohere import CohereRerank
 from langchain.retrievers import ContextualCompressionRetriever
 
 # to handle conversational memory
@@ -62,7 +62,9 @@ def get_llm(model_type="OCI", model_id="cohere.command-r-16k"):
     """
     Build and return the LLM client
     """
-    check_value_in_list(model_type, ["OCI", "COHERE"])
+    # removed direct support for Cohere
+    # we can use OCI
+    check_value_in_list(model_type, ["OCI"])
 
     logger = logging.getLogger("ConsoleLogger")
 
@@ -87,15 +89,6 @@ def get_llm(model_type="OCI", model_id="cohere.command-r-16k"):
             },
         )
 
-    if model_type == "COHERE":
-        model_id = config["llm"]["cohere"]["llm_model"]
-
-        llm = ChatCohere(
-            cohere_api_key=COHERE_API_KEY,
-            model=model_id,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
     return llm
 
 
